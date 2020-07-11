@@ -5,5 +5,5 @@ class DevelopmentConfig(object):
     MYSQL_HOST = 'localhost'
     MYSQL_USER = 'root'
     MYSQL_PASSWORD = 'alohmora'
-    MYSQL_DB = 'login_func'
+    MYSQL_DB = 'login_service'
     MYSQL_CURSORCLASS = 'DictCursor'

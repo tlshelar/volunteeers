@@ -41,6 +41,19 @@ def is_registration_data_valid(data):
     return True
 
 
+### Development purpose endpoint
+@app.route('/get_all_user_dev')
+def get_all_user_dev():
+    cur = db.connection.cursor()
+    query = '''select * from user; '''
+    cur.execute(query)
+
+    data = cur.fetchall();
+    cur.close()
+    return jsonify({'users':data})
+
+
+
 
 #API end points
 
@@ -50,6 +63,8 @@ def is_registration_data_valid(data):
 """
 
 
+
+##########--------------------------------------------------- DONT TOUCH: Its working perfectly fine!  
 @app.route('/registration', methods=['POST'])
 def registration():
     #getting payload in json-dict
@@ -60,7 +75,7 @@ def registration():
 
     if not data:
         ## no payload received 
-        return jsonify({'Logical Status Code':'204'})
+        return jsonify({'Logical Status Code':'204', "messsage":"Bad Request"})
 
     if not is_registration_data_valid(data):
         return jsonify({'Logical Status Code':'400','message':'Registration Data is Invalid !!'})
@@ -70,7 +85,7 @@ def registration():
     encrypted_password = generate_password_hash(data['passwd'], method='sha1')
 
     ##call db operation to save data in the mysql
-    db_status = register_user_dbo(
+    db_status = register_user_dbo(db,
         data['fname'], data['lname'],
         data['email'], encrypted_password,
         data['user_type'], str(data['country_code'] + data['mobile_no']) 
@@ -86,7 +101,10 @@ def registration():
     else:
         return jsonify({"Logical Status Code":" ", "message":"Something went wrong"})
 
-    return "Work in progress"
+    return "Wor"
+##########--------------------------------------------------- 
+
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -118,3 +136,6 @@ def facebook_login():
     pass
 
 
+
+if __name__ == '__main__':
+    app.run(debug=True)

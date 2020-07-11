@@ -84,12 +84,16 @@ def register_user_third_party_dbo(mysql, fname, lname, email, auth_source):
 
 
 def does_email_registered_dbo(mysql, email):
-    query = ''' insert into user (mysql, email,password )
-            values (email(),password(), %s,%s,%s,%s,%s,%s,0);'''
-    val = [email(),password()]
-    cursor.execute(query)
-    print(cursor.rowcount, "Record inserted successfully into user table")
-    cursor.close()
+
+        cursor = mysql.connection.cursor()
+        query = ''' select * from user where email like %s '''
+
+        val = [email]
+        cursor.execute(query, val)
+        if cursor.rowcount == 0:
+                return False
+        else:
+                return True
 
 
 def login_dbo(mysql, email, password):

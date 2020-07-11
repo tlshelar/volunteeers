@@ -84,6 +84,9 @@ def register_user_third_party_dbo(mysql, fname, lname, email, auth_source):
     cur.close()
     return True
 
+
+
+
 def does_email_registered_dbo(mysql, email):
 
         cursor = mysql.connection.cursor()
@@ -117,3 +120,13 @@ def is_verified_dbo(mysql, email,password):
 
 
 
+def get_user_dbo(mysql, email):
+        cur = mysql.connection.cursor()
+        query = " select * from user where email = %s"
+        val = [email]
+
+        cur.execute(query, val)
+
+        results = cur.fetchall()
+
+        return results

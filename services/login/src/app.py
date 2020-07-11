@@ -19,7 +19,9 @@ from config import DevelopmentConfig
 
 # importing dbo functions
 from dbo import (register_user_dbo, does_email_registered_dbo,
-                register_user_third_party_dbo, login_dbo)
+                register_user_third_party_dbo, login_dbo,
+                get_user_dbo
+                )
 
 
 # Creating flask instance
@@ -33,13 +35,20 @@ jwt = JWTManager(app)
 
 
 #handling environment variable 
-#os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
 
 
 #initiating instacnces for flask dance
 linkedin_blueprint = make_linkedin_blueprint(client_id=app.config['LINKEDIN_CLIENT_ID'],client_secret=app.config['LINKEDIN_CLIENT_SECRET'],scope='r_liteprofile,r_emailaddress',redirect_url='/login/linkedin')
 facebook_blueprint = make_facebook_blueprint(client_id=app.config['FACEBOOK_CLIENT_ID'],client_secret=app.config['FACEBOOK_CLIENT_SECRET'],redirect_url='/login/facebook')
-google_blueprint = make_google_blueprint(client_id=app.config['GOOGLE_CLIENT_ID'],client_secret=app.config['GOOGLE_CLIENT_SECRET'],redirect_url='/login/google')
+google_blueprint = make_google_blueprint(
+    client_id=app.config['GOOGLE_CLIENT_ID'],
+    client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+    redirect_url='/login/google',
+    scope=[
+        "openid email profile"
+    ]
+    )
 
 
 app.register_blueprint(linkedin_blueprint,url_prefix='/linkedin_login')
@@ -50,9 +59,35 @@ app.register_blueprint(google_blueprint,url_prefix='/google_login')
 ## support function for endpoints
 
 
+###------------------------------- !!!! DONT Touch,,, everthing is working fine
 def thrid_party_login(email, auth_source):
     #get data
-    return
+    if not email or not auth_source:
+        return "email or auth_source no given"
+
+    # do validation of email
+    results = get_user_dbo(db, email)
+    if not results:
+        return "Email id not registered"
+    else:
+        db_user = results[0]
+        if db_user['auth_source'] == auth_source and db_user['email'] == email:
+            access_token =  create_access_token(identity=email),
+            refresh_token = create_refresh_token(identity=email)
+
+            return jsonify({
+                "Logical Status Code" : "200",
+                "Message" : " Third Party login Successful",
+                "data" : {
+                    "access-token" : access_token,
+                    "refresh-token" : refresh_token,
+                    "fname" : db_user['fname']
+                }
+            })
+
+        else:
+            return "Authentication source error"
+
 
 
 def third_party_user_handler(email, fname, lname, auth_source):
@@ -76,16 +111,10 @@ def third_party_user_handler(email, fname, lname, auth_source):
     ## if not registered,register 
     elif registered:
         print("start login procedure")
-    ## else login
-
-    return "Something went wrong"
-
+        return thrid_party_login(email, auth_source)
+###------------------------------- ---------------------------------------------------
 
 
-##### @ Kajal
-## Regex validation of data for login !!!!!!!!!!! INCOMPLETE !!!!!!
-# if data is valid return true
-# else false
 def is_login_data_valid(data):
     return True
 
@@ -93,10 +122,6 @@ def is_login_data_valid(data):
 
 
 ###### @ Asmita
-## Regex validation of data.. !!!!!!! INCOMPLETE !!!!!
-# if data is valid return true
-# else false
-## Regex validation of data.. !!!!!!! INCOMPLETE !!!!!
 
 def is_registration_data_valid(data):
         return True
@@ -224,7 +249,7 @@ def registration():
     else:
         return jsonify({"Logical Status Code":" ", "message":"Something went wrong"})
 
-    return "Wor"
+    return "Something went wrong"
 ##########--------------------------------------------------- 
 
 
@@ -287,7 +312,7 @@ def login():
 def google_login():
     if not google.authorized:
         return redirect(url_for('google.login'))
-    account_info = google.get('oauth2/v2/userinfo')
+    account_info = google.get('/oauth2/v2/userinfo')
     print(account_info)
     if account_info.ok:
         account_info_json = account_info.json()

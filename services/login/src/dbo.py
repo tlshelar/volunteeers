@@ -70,18 +70,19 @@ def register_user_dbo(mysql, fname, lname, email, encrypted_password, user_type,
 ##########---------------------------------------------------
 
 
-
+## registration through linkedin, google, fb
 def register_user_third_party_dbo(mysql, fname, lname, email, auth_source):
     cur = mysql.connection.cursor()
 
     query =''' insert into user (uuid, fname, lname, email, auth_source,is_verified)
             values (uuid(), %s,%s,%s,%s,1);'''
 
-    val = [fname, lname, email,auth_source, 1]
-    cur.execute(query)
-    print(cursor.rowcount, "Record inserted successfully into user table")
+    val = [fname, lname, email,auth_source]
+    cur.execute(query, val)
+    print(cur.rowcount, "Record inserted successfully into user table")
+    mysql.connection.commit()
     cur.close()
-
+    return True
 
 def does_email_registered_dbo(mysql, email):
 
@@ -114,3 +115,6 @@ def is_verified_dbo(mysql, email,password):
     cursor.execute(query)
     print(cursor.rowcount, "Record inserted successfully into user table")
     cursor.close()
+
+
+

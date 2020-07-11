@@ -13,8 +13,8 @@ from flask_dance.contrib.google import make_google_blueprint, google
 from config import DevelopmentConfig
 
 # importing dbo functions
-from dbo import register_user_dbo, does_email_registered_dbo
-
+from dbo import (register_user_dbo, does_email_registered_dbo,
+                register_user_third_party_dbo)
 
 
 # Creating flask instance
@@ -40,6 +40,33 @@ app.register_blueprint(google_blueprint,url_prefix='/google_login')
 
 
 ## support function
+
+def third_party_user_handler(email, fname, lname, auth_source):
+    ## check if email is registered:
+    registered = does_email_registered_dbo(db, email)
+    print("registered: " + str(registered))
+    if not registered:
+        db_status = register_user_third_party_dbo(db,fname, lname, email, auth_source)
+    
+        if db_status:
+            return jsonify({"Logical Status Code":"200", "message":"User Registered Successfully",
+                            "data":{
+                                "fname" : fname,
+                                "lname" : lname
+                            }
+                            })
+        
+        else:
+            return "something went wrong"
+
+    ## if not registered,register 
+    elif registered:
+        print("start login procedure")
+    ## else login
+
+    return "Something went wrong"
+
+
 
 ##### @ Kajal
 ## Regex validation of data for login !!!!!!!!!!! INCOMPLETE !!!!!!
@@ -112,7 +139,14 @@ def index():
     return "<a href='/login/facebook'>facebook</a>|  |<a href='/login/linkedin'>linkedin</a>| |<a href='/login/google'>google</a>"
 
 
-
+@app.route('/delete_all_user_dev')
+def delete_all_user_dev():
+    cur = db.connection.cursor()
+    query = " delete from user"
+    cur.execute(query)
+    db.connection.commit()
+    cur.close()
+    return "ALl users deleted"
 
 @app.route('/get_all_user_dev')
 def get_all_user_dev():
@@ -216,7 +250,7 @@ def google_login():
     return "Error!!!"
 
 
-
+##########--------------------------------------------------- DONT TOUCH: Its working perfectly fine!  
 @app.route('/login/linkedin')
 def linkedin_login():
     if not linkedin.authorized:
@@ -232,8 +266,12 @@ def linkedin_login():
         user['email'] = email_json['elements'][0]['handle~']['emailAddress']
         user['firstName'] = profile_json['firstName']['localized']['en_US']
         user['lastName'] = profile_json['lastName']['localized']['en_US']
-        return user
-    return "Error!!!"
+        
+        return third_party_user_handler(user['email'],user['firstName'], user['lastName'], 'linkedin')
+##########---------------------------------------------------
+
+
+
 
 @app.route('/login/facebook')
 def facebook_login():

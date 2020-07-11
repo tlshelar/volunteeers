@@ -13,7 +13,7 @@ from dbo import register_user_dbo
 
 # Creating flask instance
 app = Flask(__name__)
-
+app.config.from_object(DevelopmentConfig)
 
 #Database instance 
 db = MySQL(app)
@@ -22,8 +22,20 @@ db = MySQL(app)
 
 ## support function
 
+##### @ Kajal
+## Regex validation of data for login !!!!!!!!!!! INCOMPLETE !!!!!!
+# if data is valid return true
+# else false
+def is_login_data_valid(data):
+    return True
 
+
+
+
+###### @ Asmita
 ## Regex validation of data.. !!!!!!! INCOMPLETE !!!!!
+# if data is valid return true
+# else false
 def is_registration_data_valid(data):
      
     return True
@@ -58,18 +70,41 @@ def registration():
     encrypted_password = generate_password_hash(data['passwd'], method='sha1')
 
     ##call db operation to save data in the mysql
-    register_user_dbo(
+    db_status = register_user_dbo(
         data['fname'], data['lname'],
         data['email'], encrypted_password,
         data['user_type'], str(data['country_code'] + data['mobile_no']) 
          )
+    
+    if db_status:
+        return jsonify({"Logical Status Code":"200", "message":"User Registered Successfully",
+                        "data":{
+                            "fname" : data['fname'],
+                            "lname" : data['lname']
+                        }
+                        })
+    else:
+        return jsonify({"Logical Status Code":" ", "message":"Something went wrong"})
 
     return "Work in progress"
 
 @app.route('/login', methods=['POST'])
 def login():
+
+    #data
+    #validation regex
+    #email_id exists?  
+    #password?  login_dbo()
+        #not is_verified?
+            #response code: 206
+        #is_verified == true
+            #response code: 200
+
     pass
 
+
+
+## @ TUSHAR
 @app.route('/login/google')
 def google_login():
     pass
@@ -81,4 +116,5 @@ def linkedin_login():
 @app.route('/login/facebook')
 def facebook_login():
     pass
+
 

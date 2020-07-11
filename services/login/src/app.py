@@ -8,6 +8,11 @@ from flask_mysqldb import MySQL   ## Does NOT support yet python3.8 ..
 from flask_dance.contrib.linkedin import make_linkedin_blueprint, linkedin
 from flask_dance.contrib.facebook import make_facebook_blueprint, facebook
 from flask_dance.contrib.google import make_google_blueprint, google
+from flask_jwt_extended import (
+    JWTManager, jwt_required, create_access_token,
+    get_jwt_identity, create_refresh_token
+    )
+
 
 # importing flask configuration
 from config import DevelopmentConfig
@@ -23,6 +28,9 @@ app.config.from_object(DevelopmentConfig)
 
 #Database instance 
 db = MySQL(app)
+
+jwt = JWTManager(app)
+
 
 #handling environment variable 
 #os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
@@ -40,6 +48,12 @@ app.register_blueprint(google_blueprint,url_prefix='/google_login')
 
 
 ## support function for endpoints
+
+
+def thrid_party_login(email, auth_source):
+    #get data
+    return
+
 
 def third_party_user_handler(email, fname, lname, auth_source):
     ## check if email is registered:
@@ -243,7 +257,18 @@ def login():
     ## if the authentication source of user in volunteeer
     if db_user['auth_source'] == 'volunteeer':
         if check_password_hash(db_user['password'], password):
-            return "oho barobar aahe passord"
+            access_token =  create_access_token(identity=email_id),
+            refresh_token = create_refresh_token(identity=email_id)
+                       
+            return jsonify({'Logical Status Code':'200', 'Message' : 'Successful Login', 'data': {
+                'fname' : db_user['fname'],
+                'access-token' : access_token,
+                'refresh-token' : refresh_token
+            }})
+
+        else:
+            return "Chukla re password... as ks visrtat re password.. Shirshasan krt jaa jara"
+
 
     #if check_password_hash(db_results['password'])
 

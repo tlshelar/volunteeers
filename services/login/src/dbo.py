@@ -59,7 +59,7 @@ def register_user_dbo(mysql, fname, lname, email, encrypted_password, user_type,
             values (uuid(), %s,%s,%s,%s,%s,%s,%s); '''
 
 
-    val = [fname, lname, email, encrypted_password, user_type, 'Volunteeer', mobile_no]
+    val = [fname, lname, email, encrypted_password, user_type, 'volunteeer', mobile_no]
     cur.execute(query, val)
     print(cur.rowcount, "Record inserted successfully into user table")
     
@@ -97,16 +97,15 @@ def does_email_registered_dbo(mysql, email):
                 return True
 
 
-def login_dbo(mysql, email, password):
-    ## check is_verified
+def login_dbo(mysql, email):
+        cur = mysql.connection.cursor()
+        query = " select * from user where email = %s"
+        val = [email]
+        cur.execute(query, val)
+        results = cur.fetchall()
 
-    query = ''' insert into user (mysql, email,password )
-            values (email(),password());'''
-    val = [email, password]
-    cursor.execute(query)
-    print(cursor.rowcount, "Record inserted successfully into user table")
-    cursor.close()
-
+        ##user_status column not added.. if added later change its status tooo
+        return results
 
 def is_verified_dbo(mysql, email,password):
     query = ''' insert into user (mysql, email,password )

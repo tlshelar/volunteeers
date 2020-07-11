@@ -14,7 +14,7 @@ from config import DevelopmentConfig
 
 # importing dbo functions
 from dbo import (register_user_dbo, does_email_registered_dbo,
-                register_user_third_party_dbo)
+                register_user_third_party_dbo, login_dbo)
 
 
 # Creating flask instance
@@ -39,7 +39,7 @@ app.register_blueprint(facebook_blueprint,url_prefix='/facebook_login')
 app.register_blueprint(google_blueprint,url_prefix='/google_login')
 
 
-## support function
+## support function for endpoints
 
 def third_party_user_handler(email, fname, lname, auth_source):
     ## check if email is registered:
@@ -219,16 +219,42 @@ def registration():
 def login():
 
     #data
+    data = request.get_json()
+    print(data)
+    
+    email_id = data['email']
+    password = data['passwd']
+
     #validation regex
-    #email_id exists?  
+    if not is_login_data_valid(data) or not email_id or not password:
+        return "Bad request"
+    
+    db_results = login_dbo(db, email_id)
+
+    if not db_results:
+        return "Email id not registered"
+    
+    db_user = db_results[0]
+
+    if not db_user:
+        return "Something went wrong"
+
+
+    ## if the authentication source of user in volunteeer
+    if db_user['auth_source'] == 'volunteeer':
+        if check_password_hash(db_user['password'], password):
+            return "oho barobar aahe passord"
+
+    #if check_password_hash(db_results['password'])
+
     #password?  login_dbo()
         #not is_verified?
             #response code: 206
         #is_verified == true
             #response code: 200
 
-    pass
-
+    
+    return "Nooooooooooooooo"
 
 
 ## @ TUSHAR

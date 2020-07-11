@@ -1,17 +1,20 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, url_for,redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 import re
-
-
+import os
 
 #third party imports
 from flask_mysqldb import MySQL   ## Does NOT support yet python3.8 .. 
+from flask_dance.contrib.linkedin import make_linkedin_blueprint, linkedin
+from flask_dance.contrib.facebook import make_facebook_blueprint, facebook
+from flask_dance.contrib.google import make_google_blueprint, google
 
 # importing flask configuration
 from config import DevelopmentConfig
 
 # importing dbo functions
 from dbo import register_user_dbo, does_email_registered_dbo
+
 
 
 # Creating flask instance
@@ -21,6 +24,19 @@ app.config.from_object(DevelopmentConfig)
 #Database instance 
 db = MySQL(app)
 
+#handling environment variable 
+#os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+
+
+#initiating instacnces for flask dance
+linkedin_blueprint = make_linkedin_blueprint(client_id=app.config['LINKEDIN_CLIENT_ID'],client_secret=app.config['LINKEDIN_CLIENT_SECRET'],scope='r_liteprofile,r_emailaddress',redirect_url='/login/linkedin')
+facebook_blueprint = make_facebook_blueprint(client_id=app.config['FACEBOOK_CLIENT_ID'],client_secret=app.config['FACEBOOK_CLIENT_SECRET'],redirect_url='/login/facebook')
+google_blueprint = make_google_blueprint(client_id=app.config['GOOGLE_CLIENT_ID'],client_secret=app.config['GOOGLE_CLIENT_SECRET'],redirect_url='/login/google')
+
+
+app.register_blueprint(linkedin_blueprint,url_prefix='/linkedin_login')
+app.register_blueprint(facebook_blueprint,url_prefix='/facebook_login')
+app.register_blueprint(google_blueprint,url_prefix='/google_login')
 
 
 ## support function
@@ -91,6 +107,13 @@ def is_registration_data_valid(data):
 
 
 ### Development purpose endpoint
+@app.route('/')
+def index():
+    return "<a href='/login/facebook'>facebook</a>|  |<a href='/login/linkedin'>linkedin</a>| |<a href='/login/google'>google</a>"
+
+
+
+
 @app.route('/get_all_user_dev')
 def get_all_user_dev():
     cur = db.connection.cursor()
@@ -177,17 +200,57 @@ def login():
 ## @ TUSHAR
 @app.route('/login/google')
 def google_login():
-    pass
+    if not google.authorized:
+        return redirect(url_for('google.login'))
+    account_info = google.get('oauth2/v2/userinfo')
+    print(account_info)
+    if account_info.ok:
+        account_info_json = account_info.json()
+        print(account_info_json)
+        user = {}
+        #add exception handling for key error
+        user['email'] = account_info_json['email']
+        user['firstName'] = account_info_json['given_name']
+        user['lastName'] = account_info_json['family_name']
+        return user
+    return "Error!!!"
+
+
 
 @app.route('/login/linkedin')
 def linkedin_login():
-    pass
+    if not linkedin.authorized:
+        return redirect(url_for('linkedin.login'))
+    
+    profile_info = linkedin.get('me')
+    email_info = linkedin.get('emailAddress?q=members&projection=(elements*(handle~))')
+    
+    if profile_info.ok and email_info.ok:
+        email_json = email_info.json()
+        profile_json = profile_info.json()
+        user = {}
+        user['email'] = email_json['elements'][0]['handle~']['emailAddress']
+        user['firstName'] = profile_json['firstName']['localized']['en_US']
+        user['lastName'] = profile_json['lastName']['localized']['en_US']
+        return user
+    return "Error!!!"
 
 @app.route('/login/facebook')
 def facebook_login():
-    pass
+    if not facebook.authorized:
+        return redirect(url_for('facebook.login'))
+    account_info = facebook.get('me?fields=id,name,email')
+    print(account_info)
+    if account_info.ok:
+        account_info_json = account_info.json()
+        user = {}
+        user['email'] = account_info_json['email']
+        user['firstName'] = account_info_json['name'].split()[0]
+        user['lastName'] = account_info_json['name'].split()[1]
+        return user
+    return "Error!!!"
 
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, ssl_context='adhoc')

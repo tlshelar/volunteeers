@@ -46,7 +46,7 @@ google_blueprint = make_google_blueprint(
     client_secret=app.config['GOOGLE_CLIENT_SECRET'],
     redirect_url='/login/google',
     scope=[
-        "openid email profile"
+        "email","profile"
     ]
     )
 
@@ -193,7 +193,7 @@ def get_all_user_dev():
     query = '''select * from user; '''
     cur.execute(query)
 
-    data = cur.fetchall();
+    data = cur.fetchall()
     cur.close()
     return jsonify({'users':data})
 
@@ -313,17 +313,19 @@ def google_login():
     if not google.authorized:
         return redirect(url_for('google.login'))
     account_info = google.get('/oauth2/v2/userinfo')
-    print(account_info)
+#    print(account_info)
     if account_info.ok:
         account_info_json = account_info.json()
-        print(account_info_json)
+#        print(account_info_json)
         user = {}
         #add exception handling for key error
         user['email'] = account_info_json['email']
         user['firstName'] = account_info_json['given_name']
         user['lastName'] = account_info_json['family_name']
-        return user
-    return "Error!!!"
+        return third_party_user_handler(user['email'],user['firstName'], user['lastName'], 'google')
+
+#        return user
+#    return "Error!!!"
 
 
 ##########--------------------------------------------------- DONT TOUCH: Its working perfectly fine!  
@@ -351,18 +353,26 @@ def linkedin_login():
 
 @app.route('/login/facebook')
 def facebook_login():
+    """
+        App is in development mode
+        use test user credentials
+        email: open_ikwdzkx_user@tfbnw.net
+        password: admin@123
+    """
     if not facebook.authorized:
         return redirect(url_for('facebook.login'))
     account_info = facebook.get('me?fields=id,name,email')
-    print(account_info)
+#    print(account_info)
     if account_info.ok:
         account_info_json = account_info.json()
         user = {}
         user['email'] = account_info_json['email']
         user['firstName'] = account_info_json['name'].split()[0]
         user['lastName'] = account_info_json['name'].split()[1]
-        return user
-    return "Error!!!"
+        return third_party_user_handler(user['email'],user['firstName'], user['lastName'], 'facebook')
+
+#        return user
+#    return "Error!!!"
 
 
 
